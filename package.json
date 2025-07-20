@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@wailsapp/runtime": "^1.1.1",
+    "@wailsio/runtime": "^3.0.0-alpha.66",
+    "@xterm/xterm": "^5.5.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/xterm": "^2.0.3"
+  }
+}
