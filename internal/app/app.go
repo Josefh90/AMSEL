@@ -9,6 +9,7 @@ import (
 
 type App struct {
 	HydraService *hydra.Hydra
+	ctx          context.Context
 }
 
 func MyApp() *App {
@@ -19,6 +20,7 @@ func MyApp() *App {
 
 func (a *App) Startup(ctx context.Context) {
 	a.HydraService.Ctx = ctx
+	a.ctx = ctx
 }
 
 func (a *App) DockerBuild() (string, error) {
@@ -42,5 +44,5 @@ func (a *App) PullSecLists() error {
 		PullOnlyFolders: true,
 		Overwrite:       false,
 	}
-	return utils_git.FetchRepoFolders(a.HydraService.Ctx, opts)
+	return utils_git.FetchRepoFolders(a.ctx, opts)
 }

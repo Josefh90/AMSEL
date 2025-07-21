@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 
 	"my-project/internal/app"
 
@@ -14,7 +15,12 @@ import (
 var assets embed.FS
 
 func main() {
+
 	wailsApp := app.MyApp()
+
+	// Use logger
+
+	fmt.Println("Server running...")
 
 	err := wails.Run(&options.App{
 		Title:  "AMSEL",

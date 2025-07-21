@@ -4,8 +4,9 @@ import MatrixTyping from "../components/ui/matrixTyping";
 import logo from "../assets/logos/v2.0.3_logo_amsel_black.png";
 import { PullSecLists } from "../../wailsjs/go/app/App";
 import { Progress } from "../components/ui/progress";
-import { Events } from "@wailsio/runtime";
+//import { Events } from "@wailsio/runtime";
 import warnings from "../constants/warnings";
+import { EventsOff, EventsOn } from "../../wailsjs/runtime/runtime";
 
 function Landing() {
   const [progress, setProgress] = useState<number>(0);
@@ -15,36 +16,32 @@ function Landing() {
   const [showOutput, setShowOutput] = useState(false);
 
 useEffect(() => {
-  Events.On("progress", (ev) => {
-    const data = ev.data as { progress: number; message: string };
-    console.log("Progress:", data.progress);
-    console.log("Message:", data.message);
-  });
-    return () => {
-      Events.Off("progress");
-    };
-  }, []);
-
-  async function handleClick() {
-    setLoading(true);
-    setProgress(0);
-    setStatusMessage("Starting download...");
-
-    try {
-      await PullSecLists();
-      setTimeout(() => {
-        setProgress(0);
-        setStatusMessage("");
-        setLoading(false);
-      }, 1000);
-      alert("SecLists downloaded successfully!");
-    } catch (err) {
-      setProgress(0);
-      setStatusMessage("Download failed.");
-      setLoading(false);
-      alert("Failed to download SecLists: " + String(err));
+  EventsOn("progress", (data: any) => {
+    if (data?.progress !== undefined) {
+      setProgress(data.progress);
+      setStatusMessage(data.message);
     }
-  }
+  });
+
+  return () => {
+     // Clean up listener
+      EventsOff("progress");
+  };
+}, []);
+
+
+function handleClick() {
+  setProgress(0);
+  setStatusMessage("Starting download...");
+  setLoading(true);
+
+  PullSecLists(); // kein await mehr!
+
+  // optional: Reset nach ein paar Sekunden
+ /* setTimeout(() => {
+    setLoading(false);
+  }, 10000); */
+}
 
   const stopHacking = () => {
     setStartHackingActive(false);

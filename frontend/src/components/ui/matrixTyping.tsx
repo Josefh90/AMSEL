@@ -80,7 +80,7 @@ const MatrixTyping: React.FC<MatrixTypingProps> = ({
   ]);
 
   return (
-    <div className="text-green-500 font-mono text-xl">
+    <div className="text-green-500 font-mono text-xl" style={{ color: '#267697' }}>
       {currentText}
       {phase === 'typing' && <span className="animate-pulse">▌</span>}
     </div>
