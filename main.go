@@ -17,7 +17,7 @@ func main() {
 	wailsApp := app.MyApp()
 
 	err := wails.Run(&options.App{
-		Title:  "my-project",
+		Title:  "AMSEL",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{

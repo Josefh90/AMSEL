@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import MatrixTyping from "../components/ui/matrixTyping";
-import logo from "../assets/logos/v2.0.2_logo_amsel_black_orange_beak.png";
+import logo from "../assets/logos/v2.0.3_logo_amsel_black.png";
 import { PullSecLists } from "../../wailsjs/go/app/App";
 import { Progress } from "../components/ui/progress";
 import { Events } from "@wailsio/runtime";
