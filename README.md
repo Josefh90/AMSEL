@@ -11,6 +11,6 @@ Years ago, I paid for what was supposed to be a professional pentest. All I got 
 So I did.
 
 # 🐦 Why the name AMSEL?
-Funny enough, the name comes from my cat. One day she had a loud argument — through the window — with a blackbird (Amsel in German) sitting on a fence. It was like watching a heated debate in the animal world. From then on, we jokingly called her “the Amsel”.
+Funny enough, the name comes from my cat. One day she had a loud argument — through the window — with a blackbird (Amsel in German) sitting on a fence. It was like watching a heated debate in the animal world. From then on, we jokingly called her “die Amsel”.
 
 Years later, when I started building this tool, the name came back to me. Not just because it’s catchy or ironic, but because I really love this cat — smart, adaptable, and always alert. Just like a good security tool should be.
