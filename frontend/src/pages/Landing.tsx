@@ -7,6 +7,7 @@ import { Progress } from "../components/ui/progress";
 //import { Events } from "@wailsio/runtime";
 import warnings from "../constants/warnings";
 import { EventsOff, EventsOn } from "../../wailsjs/runtime/runtime";
+import { useNavigate } from "react-router-dom";
 
 function Landing() {
   const [progress, setProgress] = useState<number>(0);
@@ -14,12 +15,16 @@ function Landing() {
   const [loading, setLoading] = useState(false);
   const [startHackingActive, setStartHackingActive] = useState(false);
   const [showOutput, setShowOutput] = useState(false);
+  const navigate = useNavigate();
 
 useEffect(() => {
   EventsOn("progress", (data: any) => {
     if (data?.progress !== undefined) {
       setProgress(data.progress);
       setStatusMessage(data.message);
+      if (data.progress >= 100) {
+        navigate("/dashboard");
+      }
     }
   });
 
@@ -70,7 +75,10 @@ function handleClick() {
         <div className="flex flex-wrap justify-center gap-4 mb-6">
           <Button
             onClick={handleClick}
-            className="bg-gray-800 border border-green-500 text-green-400 px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:bg-green-500 hover:text-black transition-all duration-200 rounded-none"
+             //className="bg-gray-800 border text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md transition-all duration-200 rounded-none hover:bg-amselblue hover:text-white"
+             className="bg-gray-800 border text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-white transition-all duration-200 rounded-none"
+            //className="-gray-800 border text-white px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-amselblue transition-all duration-200 rounded-none"
+            //className="bg-gray-800 border text-amselblue text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-amselblue hover:text-amselblue transition-all duration-200 rounded-none"
           >
             Start Hacking
           </Button>

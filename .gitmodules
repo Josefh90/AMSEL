@@ -1,0 +1,3 @@
+[submodule "internal/docs-and-dumps"]
+	path = internal/docs-and-dumps
+	url = https://github.com/Josefh90/docs-and-dumps

@@ -17,6 +17,7 @@
   50% { opacity: 0; }
 }
 
+
 .blink-cursor {
   animation: blink 1s step-start infinite;
 }
@@ -27,7 +28,16 @@
   animation-iteration-count: infinite;
 }
 
+.text-amselblue {
+  color: var(--amselblue);
+}
+
+.bg-amselblue {
+  color: var(--amselblue);
+}
+
 @theme inline {
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -98,6 +108,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --amselblue : #267697;
 }
 
 .dark {
