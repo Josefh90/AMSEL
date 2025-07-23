@@ -1,3 +1,6 @@
 [submodule "internal/docs-and-dumps"]
 	path = internal/docs-and-dumps
 	url = https://github.com/Josefh90/docs-and-dumps
+[submodule "internal/gobox"]
+	path = internal/gobox
+	url = https://github.com/Josefh90/gobox
