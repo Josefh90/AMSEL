@@ -8,3 +8,5 @@ export function PullSecLists():Promise<void>;
 export function RunCommand(arg1:string):Promise<string>;
 
 export function RunDockerContainer():Promise<void>;
+
+export function TestFunction(arg1:string):Promise<any>;

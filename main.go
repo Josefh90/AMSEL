@@ -22,7 +22,7 @@ func main() {
 
 	fmt.Println("Server running...")
 
-	err := wails.Run(&options.App{
+	errServer := wails.Run(&options.App{
 		Title:  "AMSEL",
 		Width:  1024,
 		Height: 768,
@@ -36,7 +36,7 @@ func main() {
 		},
 	})
 
-	if err != nil {
-		println("Error:", err.Error())
+	if errServer != nil {
+		println("Error:", errServer.Error())
 	}
 }

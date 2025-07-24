@@ -4,7 +4,7 @@ import { AppSidebar } from "../components/app-sidebar"
  
 export default function AppLayout() {
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
+    <div className="flex h-screen bg-gray-900 text-white border-none">
     <SidebarProvider>
       <AppSidebar />
       <main>

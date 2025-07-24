@@ -4,18 +4,34 @@ import { useState } from "react"
 //import { DataTable } from "../components/data-table"
 import { SectionCards } from "../components/section-cards"
 import { SiteHeader } from "../components/site-header"
+import { Button } from "../components/ui/button"
 import TargetMachineInfo from "../components/section-targetMaschineInfo"
 import TerminalOutput from "../components/util-terminalOutput"; // Adjust path if needed
+import { useNavigate } from 'react-router-dom';
 import {
   SidebarInset,
   SidebarProvider,
 } from "../components/ui/sidebar"
 
+//import { TestFunction } from "../../wailsjs/go/app/App";
+
 //import data from "./data.json"
+
 
 
 export default function Page() {
     const [terminalOutput, setTerminalOutput] = useState("")
+     const navigate = useNavigate();
+
+  const testHandler = async () => {
+    try {
+     // const result = await TestFunction();
+    //  console.log("Directory structure:", result);
+    } catch (error) {
+      //console.error("Error fetching directory structure:", error);
+    }
+  };
+
   return (
     <SidebarProvider 
       style={
@@ -36,6 +52,12 @@ export default function Page() {
               </div>
               <SectionCards />
             </div>
+            <Button onClick={() => navigate('/dashboard')}>
+              Refresh
+            </Button>
+            <Button onClick={testHandler}>
+              functionTest
+            </Button>
             <div className="p-6">
               <TerminalOutput output={terminalOutput} />
             </div>
