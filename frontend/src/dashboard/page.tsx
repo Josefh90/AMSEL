@@ -1,13 +1,14 @@
 import { AppSidebar } from "../components/app-sidebar"
-import { useState } from "react"
+//import { useState } from "react"
 //mport { ChartAreaInteractive } from "../components/chart-area-interactive"
 //import { DataTable } from "../components/data-table"
 import { SectionCards } from "../components/section-cards"
 import { SiteHeader } from "../components/site-header"
-import { Button } from "../components/ui/button"
-import TargetMachineInfo from "../components/section-targetMaschineInfo"
-import TerminalOutput from "../components/util-terminalOutput"; // Adjust path if needed
-import { useNavigate } from 'react-router-dom';
+
+//import TargetMachineInfo from "../components/section-targetMaschineInfo"
+
+import { Terminal } from "../components/terminal/xterm"
+//import { useNavigate } from 'react-router-dom';
 import {
   SidebarInset,
   SidebarProvider,
@@ -15,12 +16,12 @@ import {
 
 //import { TestFunction } from "../../wailsjs/go/app/App";
 
-//import data from "./data.json"
+//import data from "./data.json"s
 
 
 
 export default function Page() {
-    const [terminalOutput, setTerminalOutput] = useState("")
+   /* const [terminalOutput, setTerminalOutput] = useState("")
      const navigate = useNavigate();
 
   const testHandler = async () => {
@@ -30,7 +31,7 @@ export default function Page() {
     } catch (error) {
       //console.error("Error fetching directory structure:", error);
     }
-  };
+  }; */
 
   return (
     <SidebarProvider 
@@ -48,21 +49,29 @@ export default function Page() {
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="p-6">
-                <TargetMachineInfo setTerminalOutput={setTerminalOutput} />
+               {/* <TargetMachineInfo setTerminalOutput={setTerminalOutput} /> */}
               </div>
               <SectionCards />
             </div>
-            <Button onClick={() => navigate('/dashboard')}>
+           {/* <Button onClick={() => navigate('/dashboard')}>
               Refresh
             </Button>
             <Button onClick={testHandler}>
               functionTest
-            </Button>
-            <div className="p-6">
-              <TerminalOutput output={terminalOutput} />
+            </Button> */}
+
+                              <div>
+              
+            <Terminal />
             </div>
+
+           
+          {/* <div className="p-6">
+              <TerminalOutput output={terminalOutput} />
+            </div> */}
           </div>
         </div>
+
       </SidebarInset>
     </SidebarProvider>
   )

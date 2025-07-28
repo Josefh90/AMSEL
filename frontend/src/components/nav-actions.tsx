@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import {
   ArrowDown,
   ArrowUp,
@@ -35,6 +34,8 @@ import {
   SidebarMenuItem,
 } from "../components/ui/sidebar"
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import { TimeDisplay } from "../components/util-timeDisplay"
 const data = [
   [
     {
@@ -99,19 +100,20 @@ const data = [
 ]
 
 export function NavActions() {
-  const [isOpen, setIsOpen] = React.useState(false)
-    const navigate = useNavigate()
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
+  // Close popover on mount (your existing effect)
+  useEffect(() => {
+    setIsOpen(false);
+  }, []);
 
-
-  React.useEffect(() => {
-    setIsOpen(true)
-  }, [])
 
   return (
     <div className="flex items-center gap-2 text-sm">
       <div className="text-muted-foreground hidden font-medium md:inline-block">
-        Edit Oct 08
+<TimeDisplay format="date"/> 
+
       </div>
       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate('/')}>
         <House />

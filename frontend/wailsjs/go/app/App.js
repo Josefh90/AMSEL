@@ -18,6 +18,14 @@ export function RunDockerContainer() {
   return window['go']['app']['App']['RunDockerContainer']();
 }
 
+export function SendInput(arg1) {
+  return window['go']['app']['App']['SendInput'](arg1);
+}
+
+export function StartTerminal(arg1) {
+  return window['go']['app']['App']['StartTerminal'](arg1);
+}
+
 export function TestFunction(arg1) {
   return window['go']['app']['App']['TestFunction'](arg1);
 }

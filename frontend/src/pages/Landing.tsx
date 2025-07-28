@@ -13,8 +13,8 @@ function Landing() {
   const [progress, setProgress] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [startHackingActive, setStartHackingActive] = useState(false);
-  const [showOutput, setShowOutput] = useState(false);
+  const [startHackingActive] = useState(false);
+  const [showOutput] = useState(false);
   const navigate = useNavigate();
 
 useEffect(() => {
@@ -49,8 +49,7 @@ function handleClick() {
 }
 
   const stopHacking = () => {
-    setStartHackingActive(false);
-    setShowOutput(false);
+ navigate("/dashboard");
   };
 
   return (
@@ -101,7 +100,7 @@ function handleClick() {
         )}
       </div>
 
-      {startHackingActive && (
+     
         <div className="flex flex-wrap justify-center gap-4 mt-6 mb-6">
           <Button
             onClick={stopHacking}
@@ -110,7 +109,7 @@ function handleClick() {
             Stop Hacking
           </Button>
         </div>
-      )}
+      
 
       <div
         className={`w-full px-2 sm:px-8 flex justify-center transition-all duration-300 ${

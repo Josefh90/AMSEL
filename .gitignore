@@ -33,7 +33,7 @@ go.work.sum
 
 # Wordlists downloaded from git
 seclists
-worl
+wordlists
 
 build/bin
 node_modules

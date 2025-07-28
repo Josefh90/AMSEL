@@ -9,4 +9,8 @@ export function RunCommand(arg1:string):Promise<string>;
 
 export function RunDockerContainer():Promise<void>;
 
+export function SendInput(arg1:string):Promise<void>;
+
+export function StartTerminal(arg1:string):Promise<void>;
+
 export function TestFunction(arg1:string):Promise<any>;
