@@ -26,6 +26,14 @@ export function StartTerminal(arg1) {
   return window['go']['app']['App']['StartTerminal'](arg1);
 }
 
+export function StopTerminal() {
+  return window['go']['app']['App']['StopTerminal']();
+}
+
 export function TestFunction(arg1) {
   return window['go']['app']['App']['TestFunction'](arg1);
+}
+
+export function WriteRaw(arg1) {
+  return window['go']['app']['App']['WriteRaw'](arg1);
 }

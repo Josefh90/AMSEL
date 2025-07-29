@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from "react"
 import { Terminal as XTerm } from "xterm"
 import "xterm/css/xterm.css"
-import {  EventsOn } from "../../../wailsjs/runtime/runtime";
-import { SendInput, StartTerminal } from "../../../wailsjs/go/app/App"
+import { EventsOn } from "../../../wailsjs/runtime/runtime"
+import { StartTerminal, WriteRaw } from "../../../wailsjs/go/app/App"
 import { FitAddon } from "xterm-addon-fit"
 
 export function Terminal() {
   const terminalRef = useRef<HTMLDivElement | null>(null)
   const xtermRef = useRef<XTerm | null>(null)
-  const inputRef = useRef("") // Eingabepuffer
   const [isVisible, setIsVisible] = useState(true)
-  const startedRef = useRef(false) // Nur einmal Shell starten
+  const startedRef = useRef(false)
 
-  useEffect(() => {
-  if (!isVisible) return
-
-
-
+useEffect(() => {
   const timeout = setTimeout(() => {
     if (terminalRef.current && !xtermRef.current) {
       const term = new XTerm({
@@ -24,73 +19,39 @@ export function Terminal() {
         fontFamily: "monospace",
         cursorBlink: true,
         fontSize: 14,
-      theme: {
-        background: "#1e1e1e",
-        foreground: "#d0d0d0",
-      },
-  //rendererType: "canvas", // wichtig für Performance & Escape-Handling
+        theme: {
+          background: "#1e1e1e",
+          foreground: "#d0d0d0",
+        },
       })
 
-        const fitAddon = new FitAddon()
+      const fitAddon = new FitAddon()
       term.loadAddon(fitAddon)
       term.open(terminalRef.current)
       fitAddon.fit()
 
-      term.open(terminalRef.current)
-      term.reset()
-      term.writeln("Welcome to your terminal!")
-      term.write("> ")
+      // 🧠 Direkte Eingabe: an ConPTY schicken
+      term.onData((data: string) => {
+        WriteRaw(data)
+      })
 
-
-      // 🟢 Nur einmal starten
+      // 🟢 Backend starten
       if (!startedRef.current) {
         StartTerminal("hydra-container")
           .then(() => {
-            term.writeln("[Shell gestartet]")
+            term.writeln("[ConPTY gestartet]")
             startedRef.current = true
           })
           .catch((err) => {
-            console.error("Shell konnte nicht gestartet werden:", err)
-            term.writeln("[Fehler beim Starten der Shell]")
+            console.error("Fehler beim Start:", err)
+            term.writeln("[Fehler beim Starten]")
           })
       }
 
-      // 🧠 Eingabe verarbeiten
-term.onData((data: string) => {
-  if (!inputRef.current) inputRef.current = ""
-
-  if (data === "\r") {
-    // Enter gedrückt: puffer ans Backend senden
-    term.write("\r\n")
-    SendInput(inputRef.current)  // kompletter Befehl
-    inputRef.current = ""
-    term.write("> ")
-  } else if (data === "\u007f") {
-    // Backspace: nur lokal aus Puffer löschen und visuell löschen
-    if (inputRef.current.length > 0) {
-      inputRef.current = inputRef.current.slice(0, -1)
-      term.write("\b \b")
-    }
-    // NICHT an Backend senden!
-  } else if (data === "\t") {
-    // Tab: ebenfalls nicht lokal anzeigen und auch nicht ans Backend senden
-    // Wenn du Autocomplete willst, brauchst du hier komplexere Logik,
-    // weil ohne PTY dein Backend Tab nicht versteht
-  } else {
-    // Normale Zeichen: lokal puffern und anzeigen
-    inputRef.current += data
-    term.write(data)
-  }
-})
-
-
-
-      // 🔁 Backend → Terminal
- 
-
+      // 📡 Ausgabe vom Backend
       EventsOn("terminal:data", (data) => {
-  xtermRef.current?.write(data as string)
-})
+        term.write(data as string)
+      })
 
       xtermRef.current = term
     }
@@ -98,7 +59,6 @@ term.onData((data: string) => {
 
   return () => {
     clearTimeout(timeout)
-    //Events.Off("terminal:data")
     xtermRef.current?.dispose()
     xtermRef.current = null
   }
@@ -128,7 +88,7 @@ term.onData((data: string) => {
 
       <div
         ref={terminalRef}
-       className="w-full h-[calc(100%-2rem)] overflow-hidden p-0 m-0"
+        className="w-full h-[calc(100%-2rem)] overflow-hidden p-0 m-0"
       />
     </div>
   )

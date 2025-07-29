@@ -2,20 +2,15 @@ package app
 
 import (
 	"context"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	hydra "my-project/internal/services"
-	//utils_git "my-project/internal/utils"
-	//testfunc "my-project/internal"
-	//"github.com/creack/pty"
 
 	gobox_utils "github.com/Josefh90/gobox"
-
-	"fmt"
-	"io"
-	"path/filepath"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -23,33 +18,59 @@ import (
 type App struct {
 	HydraService *hydra.Hydra
 	ctx          context.Context
-
-	cmd   *exec.Cmd
-	stdin io.WriteCloser // ⬅️ HIER hinzufügen!
+	cmd          *exec.Cmd
+	stdin        io.WriteCloser
+	ptyFile      io.Closer
 }
 
-func MyApp() *App {
-	return &App{
-		HydraService: hydra.NewHydra(),
-	}
+func NewApp() *App {
+	return &App{HydraService: hydra.NewHydra()}
+}
+
+func (a *App) WriteRaw(data string) {
+	log.Println("🖥️ InputData:", data)
+	io.WriteString(a.stdin, data)
 }
 
 func (a *App) Startup(ctx context.Context) {
-	a.HydraService.Ctx = ctx
 	a.ctx = ctx
-	log.Println("✅ Context gesetzt in startup")
 	runtime.EventsEmit(ctx, "terminal:data", "🎉 Terminal Ready\n")
-
-	// Listen to input events and write to terminal
 	runtime.EventsOn(ctx, "terminal:input", func(data ...interface{}) {
-		if len(data) == 0 {
-			return
-		}
-		input, ok := data[0].(string)
-		if ok {
-			gobox_utils.WriteToTerminal(input)
+		if input, ok := data[0].(string); ok {
+			a.SendInput(input)
 		}
 	})
+}
+
+func (a *App) StopTerminal() error {
+	if a.ptyFile != nil {
+		a.ptyFile.Close()
+	}
+	if a.cmd != nil && a.cmd.Process != nil {
+		return a.cmd.Process.Kill()
+	}
+	return nil
+}
+
+func (a *App) SendInput(input string) {
+	if a.stdin == nil {
+		return
+	}
+	if input == "ls" {
+		input = "ls --color=always -C"
+	}
+	if _, err := io.WriteString(a.stdin, input+"\n"); err != nil {
+		log.Println("stdin write error:", err)
+	}
+}
+
+func getProjectRoot() (string, error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Dir(exePath)
+	return filepath.Abs(filepath.Join(dir, "..", ".."))
 }
 
 func (a *App) DockerBuild() (string, error) {
@@ -88,96 +109,4 @@ func (a *App) TestFunction(root string) (interface{}, error) {
 	//	return nil, err
 	//}
 	return root, nil
-}
-
-func getProjectRoot() (string, error) {
-	exePath, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	// zurück vom build/bin zur Projektwurzel
-	return filepath.Abs(filepath.Join(filepath.Dir(exePath), "..", ".."))
-}
-
-func (a *App) StartTerminal(containerName string) error {
-	//dockerRun := fmt.Sprintf("docker run --rm --name %s -i kali", containerName)
-	imageName := "my-kali-image"
-	projectRoot, err := getProjectRoot()
-
-	// ✅ Baue das Docker-Image, falls es nicht da ist
-	buildCmd := exec.Command("docker", "build", "-t", imageName, ".")
-	buildCmd.Dir = projectRoot // Ordner, wo dein Dockerfile liegt
-	buildOut, err := buildCmd.CombinedOutput()
-	if err != nil {
-		log.Println("Build output:", string(buildOut))
-		runtime.EventsEmit(a.ctx, "terminal:data", string(buildOut))
-		return fmt.Errorf("fehler beim Bauen des Images: %s\n%s", err, string(buildOut))
-	}
-
-	//a.cmd = exec.Command("docker", "run", "--rm", "--name", containerName, "-i", "my-kali-image")
-	a.cmd = exec.Command("docker", "run", "--rm", "--name", containerName, "-i", "my-kali-image", "bash", "-i")
-	a.cmd.Env = append(os.Environ(),
-		"COLUMNS=120",
-		"LINES=40",
-	)
-
-	stdout, err := a.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("stdout pipe error: %w", err)
-	}
-
-	stderr, err := a.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("stderr pipe error: %w", err)
-	}
-
-	stdin, err := a.cmd.StdinPipe()
-	if err != nil {
-		return fmt.Errorf("stdin pipe error: %w", err)
-	}
-	a.stdin = stdin
-
-	// Starte Container
-	if err := a.cmd.Start(); err != nil {
-		return fmt.Errorf("cmd start error: %w", err)
-	}
-
-	// Kombiniere stdout + stderr
-	go a.streamOutput(stdout)
-	go a.streamOutput(stderr)
-
-	return nil
-}
-
-func (a *App) streamOutput(reader io.ReadCloser) {
-	log.Println("📡 Starting streamOutput...") // <---
-
-	buf := make([]byte, 1024)
-	for {
-		n, err := reader.Read(buf)
-		if err != nil {
-			log.Println("❌ Read error:", err)
-			break
-		}
-		//data := string(buf[:n])
-		data := string(buf[:n]) // raw output including ANSI codes
-		log.Println(">", data)
-		runtime.EventsEmit(a.ctx, "terminal:data", data)
-
-		//runtime.EventsEmit(a.ctx, "terminal:data", buf[:n])
-	}
-}
-
-// Empfängt Eingaben vom Frontend
-func (a *App) SendInput(input string) {
-	if a.stdin != nil {
-		// ls automatisch erweitern
-		if input == "ls" {
-			input = "ls --color=always -C"
-		}
-		_, err := io.WriteString(a.stdin, input+"\n")
-		if err != nil {
-			log.Println("Fehler beim Schreiben an stdin:", err)
-		}
-	}
 }

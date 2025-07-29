@@ -13,4 +13,8 @@ export function SendInput(arg1:string):Promise<void>;
 
 export function StartTerminal(arg1:string):Promise<void>;
 
+export function StopTerminal():Promise<void>;
+
 export function TestFunction(arg1:string):Promise<any>;
+
+export function WriteRaw(arg1:string):Promise<void>;

@@ -4,12 +4,13 @@ go 1.24.4
 
 require (
 	github.com/Josefh90/gobox v0.4.5
+	github.com/creack/pty v1.1.24
+	github.com/qsocket/conpty-go v0.0.0-20230315180542-d8f8596877dc
 	github.com/wailsapp/wails/v2 v2.10.2
 )
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect
-	github.com/creack/pty v1.1.24 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect

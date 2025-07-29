@@ -16,7 +16,7 @@ var assets embed.FS
 
 func main() {
 
-	wailsApp := app.MyApp()
+	wailsApp := app.NewApp()
 
 	// Use logger
 
