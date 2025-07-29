@@ -3,6 +3,8 @@
 
 export function DockerBuild():Promise<string>;
 
+export function GetCompletion(arg1:string):Promise<string>;
+
 export function PullSecLists():Promise<void>;
 
 export function RunCommand(arg1:string):Promise<string>;

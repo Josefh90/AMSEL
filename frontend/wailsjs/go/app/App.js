@@ -6,6 +6,10 @@ export function DockerBuild() {
   return window['go']['app']['App']['DockerBuild']();
 }
 
+export function GetCompletion(arg1) {
+  return window['go']['app']['App']['GetCompletion'](arg1);
+}
+
 export function PullSecLists() {
   return window['go']['app']['App']['PullSecLists']();
 }

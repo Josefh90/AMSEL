@@ -11,6 +11,8 @@ import (
 	//testfunc "my-project/internal"
 	//"github.com/creack/pty"
 
+	"strings"
+
 	gobox_utils "github.com/Josefh90/gobox"
 
 	"fmt"
@@ -180,4 +182,36 @@ func (a *App) SendInput(input string) {
 			log.Println("Fehler beim Schreiben an stdin:", err)
 		}
 	}
+}
+
+func (a *App) GetCompletion(fullInput string) string {
+	containerName := "hydra-container"
+
+	// Extrahiere das letzte Argument (z. B. "cd v" → "v")
+	parts := strings.Fields(fullInput)
+	if len(parts) == 0 {
+		return ""
+	}
+	lastArg := parts[len(parts)-1]
+
+	cmd := exec.Command("docker", "exec", containerName,
+		"bash", "-c", fmt.Sprintf("compgen -A file -o dirnames -- '%s'", lastArg),
+	)
+
+	out, err := cmd.Output()
+	if err != nil {
+		log.Println("compgen error:", err)
+		return ""
+	}
+
+	// Treffer auswerten
+	lines := strings.Split(string(out), "\n")
+	if len(lines) == 0 || lines[0] == "" {
+		return fullInput
+	}
+	suggestion := lines[0]
+
+	// Rekonstruiere ursprünglichen Befehl mit Autocomplete
+	parts[len(parts)-1] = suggestion
+	return strings.Join(parts, " ")
 }

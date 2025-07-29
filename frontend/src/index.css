@@ -35,6 +35,13 @@
   vertical-align: middle;
 }
 
+.hover\:text-amselblue:hover {
+  color: var(--amselblue);
+}
+
+.font-mono {
+  font-family: 'Menlo', 'Source Code Pro', 'Fira Code', monospace;
+}
 
 .blink-cursor {
   animation: blink 1s step-start infinite;
