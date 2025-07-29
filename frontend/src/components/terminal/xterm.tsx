@@ -20,12 +20,15 @@ export function Terminal() {
   const timeout = setTimeout(() => {
     if (terminalRef.current && !xtermRef.current) {
       const term = new XTerm({
-        cols: 80,
-        rows: 24,
-        theme: {
-          background: "#1e1e1e",
-          foreground: "#267697",
-        },
+        convertEol: true,
+        fontFamily: "monospace",
+        cursorBlink: true,
+        fontSize: 14,
+      theme: {
+        background: "#1e1e1e",
+        foreground: "#d0d0d0",
+      },
+  //rendererType: "canvas", // wichtig für Performance & Escape-Handling
       })
 
         const fitAddon = new FitAddon()
@@ -53,24 +56,34 @@ export function Terminal() {
       }
 
       // 🧠 Eingabe verarbeiten
-      term.onData((data: string) => {
-        if (!inputRef.current) inputRef.current = ""
+term.onData((data: string) => {
+  if (!inputRef.current) inputRef.current = ""
 
-        if (data === "\r") {
-          term.write("\r\n")
-          SendInput(inputRef.current)
-          inputRef.current = ""
-          term.write("> ")
-        } else if (data === "\u007f") {
-          if (inputRef.current.length > 0) {
-            inputRef.current = inputRef.current.slice(0, -1)
-            term.write("\b \b")
-          }
-        } else {
-          inputRef.current += data
-          term.write(data)
-        }
-      })
+  if (data === "\r") {
+    // Enter gedrückt: puffer ans Backend senden
+    term.write("\r\n")
+    SendInput(inputRef.current)  // kompletter Befehl
+    inputRef.current = ""
+    term.write("> ")
+  } else if (data === "\u007f") {
+    // Backspace: nur lokal aus Puffer löschen und visuell löschen
+    if (inputRef.current.length > 0) {
+      inputRef.current = inputRef.current.slice(0, -1)
+      term.write("\b \b")
+    }
+    // NICHT an Backend senden!
+  } else if (data === "\t") {
+    // Tab: ebenfalls nicht lokal anzeigen und auch nicht ans Backend senden
+    // Wenn du Autocomplete willst, brauchst du hier komplexere Logik,
+    // weil ohne PTY dein Backend Tab nicht versteht
+  } else {
+    // Normale Zeichen: lokal puffern und anzeigen
+    inputRef.current += data
+    term.write(data)
+  }
+})
+
+
 
       // 🔁 Backend → Terminal
  
