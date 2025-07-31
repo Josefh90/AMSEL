@@ -1,3 +1,5 @@
+// frontend/src/components/terminal/hooks/useTerminalManager.tsx
+
 import { useState } from "react";
 
 export interface TerminalTab {

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { TerminalSplit } from "./TerminalSplit";
 import { TerminalSidebar } from "./TerminalSidebar";
-import { useTerminalManager } from "./hooks/useTerminalManager";
+
 import { TerminalHeader } from "./TerminalHeader";
-//import { useTerminal } from "./context/TerminalContext";
+import { useTerminal } from "./context/TerminalContext";
 
 export function formatElapsedTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -37,11 +37,11 @@ export function TerminalInstance({ sidebarWidth }: { sidebarWidth: number }) {
 
   const {
     terminals,
-    selectedIndex,
-    setSelectedIndex,
+    selectedTerminal,
+    selectTerminal,
     addTerminal,
     removeTerminal,
-  } = useTerminalManager();
+  } = useTerminal();;
 
 
 
@@ -114,13 +114,13 @@ export function TerminalInstance({ sidebarWidth }: { sidebarWidth: number }) {
           {/* Hauptbereich bleibt gleich */}
           <div className="flex flex-grow overflow-hidden h-full">
             <div className="flex-1 overflow-hidden">
-              <TerminalSplit terminalCount={terminals.length} />
+              <TerminalSplit />
             </div>
             <div className="w-1 cursor-col-resize bg-neutral-800 hover:bg-neutral-600" />
             <TerminalSidebar
               terminals={terminals}
-              selectedTerminal={selectedIndex}
-              onSelect={setSelectedIndex}
+              selectedTerminal={selectedTerminal}
+              onSelect={selectTerminal}
               onAdd={addTerminal}
               onDelete={removeTerminal}
             />

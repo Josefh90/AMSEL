@@ -23,6 +23,7 @@ type TerminalContextType = {
     setIsVisible: (visible: boolean) => void;
     hideTerminal: () => void;
     showTerminal: () => void;
+    // splitTerminal: (index: number) => void; // Funktion zum Aufteilen eines Terminals
 };
 
 const TerminalContext = createContext<TerminalContextType | undefined>(undefined);
@@ -46,19 +47,26 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     const hideTerminal = () => setIsVisible(false);
     const showTerminal = () => setIsVisible(true);
 
-    const addTerminal = () => {
+    const addTerminal = (index?: number) => {
         setTerminals((prev) => {
-            const newId = prev.length ? prev[prev.length - 1].id + 1 : 1;
-            const newTerm: TerminalTab = {
-                id: newId,
-                name: `Terminal ${newId}`,
-                startTime: Date.now(), // Set start time to current timestamp
+            const nextId = prev.length ? prev[prev.length - 1].id + 1 : 1;
+            const newTerminal: TerminalTab = {
+                id: nextId,
+                name: `Terminal ${nextId}`,
+                startTime: Date.now(),
             };
-            return [...prev, newTerm];
-        });
-        setSelectedTerminal(terminals.length);
-    };
 
+            if (index !== undefined) {
+                const updated = [...prev];
+                updated.splice(index + 1, 0, newTerminal);
+                return updated;
+            }
+
+            return [...prev, newTerminal];
+        });
+
+        setSelectedTerminal(index !== undefined ? index + 1 : terminals.length);
+    };
 
 
     const removeTerminal = (index: number) => {
@@ -88,7 +96,8 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
                 setHeight,
                 setIsVisible,
                 hideTerminal,
-                showTerminal,
+                showTerminal
+
             }}
         >
             {children}
