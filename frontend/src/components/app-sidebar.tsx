@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, forwardRef } from "react"
 import { ChevronRight, File, Folder, Frame, PieChart, Map } from "lucide-react"
 import {
   Sidebar,
@@ -85,57 +85,59 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [fileTree, setFileTree] = useState<FileNode | null>(null)
+export const AppSidebar = forwardRef<HTMLDivElement, React.ComponentProps<typeof Sidebar>>(
+  function AppSidebar({ ...props }, ref) {
+    const [fileTree, setFileTree] = useState<FileNode | null>(null);
 
-  useEffect(() => {
-    const loadTree = async () => {
-      try {
-        const result = await TestFunction("./wordlists") // Adjust the path as needed
-        setFileTree(result)
-      } catch (error) {
-        console.error("Error loading file tree:", error)
-      }
-    }
-    loadTree()
-  }, [])
+    useEffect(() => {
+      const loadTree = async () => {
+        try {
+          const result = await TestFunction("./wordlists");
+          setFileTree(result);
+        } catch (error) {
+          console.error("Error loading file tree:", error);
+        }
+      };
+      loadTree();
+    }, []);
 
-  return (
-    <Sidebar {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
-                <div className=" text-amselblue text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <GalleryVerticalEnd className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">AMSEL</span>
-                  <span className="">v0.0.0-alpha</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+    return (
+      <Sidebar ref={ref} {...props}>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <a href="#">
+                  <div className=" text-amselblue text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <GalleryVerticalEnd className="size-4" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-semibold">AMSEL</span>
+                    <span className="">v0.0.0-alpha</span>
+                  </div>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-      <SidebarContent>
+        <SidebarContent>
           <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <SidebarGroup>1
-          <SidebarGroupLabel>Files</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu >
-              {fileTree ? <RenderTree node={fileTree} /> : <div>Loading...</div>}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
-  )
-}
+          <NavProjects projects={data.projects} />
+          <SidebarGroup>
+            <SidebarGroupLabel>Files</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {fileTree ? <RenderTree node={fileTree} /> : <div>Loading...</div>}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarRail />
+      </Sidebar>
+    );
+  }
+);
 
 function RenderTree({ node }: { node: FileNode }) {
   if (!node.isDir) {

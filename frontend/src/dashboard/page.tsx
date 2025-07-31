@@ -4,75 +4,80 @@ import { AppSidebar } from "../components/app-sidebar"
 //import { DataTable } from "../components/data-table"
 import { SectionCards } from "../components/section-cards"
 import { SiteHeader } from "../components/site-header"
+import { useEffect, useState, useRef } from "react"
 
 //import TargetMachineInfo from "../components/section-targetMaschineInfo"
 
-import { Terminal } from "../components/terminal/xterm"
+import { TerminalInstance } from "../components/terminal";
+import { TerminalProvider } from "../components/terminal/context/TerminalContext"
 //import { useNavigate } from 'react-router-dom';
 import {
   SidebarInset,
   SidebarProvider,
+
 } from "../components/ui/sidebar"
 
-//import { TestFunction } from "../../wailsjs/go/app/App";
-
-//import data from "./data.json"s
 
 
 
 export default function Page() {
-   /* const [terminalOutput, setTerminalOutput] = useState("")
-     const navigate = useNavigate();
+  const [sidebarWidth, setSidebarWidth] = useState(288);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const testHandler = async () => {
-    try {
-     // const result = await TestFunction();
-    //  console.log("Directory structure:", result);
-    } catch (error) {
-      //console.error("Error fetching directory structure:", error);
-    }
-  }; */
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect) {
+          setSidebarWidth(entry.contentRect.width);
+        }
+      }
+    });
+
+    observer.observe(sidebarRef.current);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <SidebarProvider 
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
+    <SidebarProvider
+      style={{
+        "--sidebar-width": "calc(var(--spacing) * 72)",
+        "--header-height": "calc(var(--spacing) * 12)",
+      } as React.CSSProperties}
     >
-      <AppSidebar  variant="inset" />
+      {/* Sidebar mit Ref */}
+      <div ref={sidebarRef}>
+        <AppSidebar ref={sidebarRef} variant="inset" />
+      </div>
+
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col bg-black ">
+        <div className="flex flex-1 flex-col bg-black">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <div className="p-6">
-               {/* <TargetMachineInfo setTerminalOutput={setTerminalOutput} /> */}
-              </div>
+              <div className="p-6">{/* ... */}</div>
               <SectionCards />
             </div>
-           {/* <Button onClick={() => navigate('/dashboard')}>
-              Refresh
-            </Button>
-            <Button onClick={testHandler}>
-              functionTest
-            </Button> */}
+            <div className="flex flex-1 flex-col gap-4 p-4">
 
-                              <div>
-              
-            <Terminal />
             </div>
 
-           
-          {/* <div className="p-6">
-              <TerminalOutput output={terminalOutput} />
-            </div> */}
+
+            {/* Terminal mit dynamischer Left-Position */}
+            <div
+
+            >
+              <TerminalProvider>
+                <TerminalInstance sidebarWidth={sidebarWidth} />
+              </TerminalProvider>
+
+            </div>
           </div>
         </div>
-
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
+
