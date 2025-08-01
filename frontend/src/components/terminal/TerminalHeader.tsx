@@ -7,30 +7,27 @@ import {
 
 import { ChevronDown, Minimize2, X, Plus } from "lucide-react";
 import { Button } from "../ui/button";
-import { useTerminalManager } from "./hooks/useTerminalManager";
-//import { useTerminal } from "./context/TerminalContext";
+import { useTerminal } from "./context/TerminalContext"; // ✅ Use context
 
 export function TerminalHeader() {
-    // const { isVisible, hideTerminal } = useTerminal();
     const {
         addTerminal,
-    } = useTerminalManager();
-
+        hideTerminal, // ✅ Optional: implement hide on "X" or minimize if needed
+    } = useTerminal();
 
     return (
         <div className="flex items-center justify-between text-sm bg-[#2d2d2d] text-white px-3 py-[2px] border-b border-neutral-700 h-8">
             {/* Terminal Label */}
             <div className="px-2 py-[1px] rounded-t bg-[#1e1e1e] font-semibold text-xs leading-tight">
                 Shellbird
-                {/* <Button onClick={hideTerminal}>Close</Button> */}
             </div>
 
-            {/* Button-Gruppe */}
+            {/* Button Group */}
             <div className="flex items-center space-x-1">
-                {/* Kombinierter Button */}
                 <div className="flex">
+                    {/* Add Terminal Button */}
                     <Button
-                        onClick={addTerminal}
+                        onClick={() => addTerminal()} // ✅ opens new tab at end
                         variant="ghost"
                         size="icon"
                         className="rounded-r-none hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"
@@ -39,6 +36,7 @@ export function TerminalHeader() {
                         <Plus className="w-4 h-4" />
                     </Button>
 
+                    {/* Dropdown Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
@@ -57,7 +55,7 @@ export function TerminalHeader() {
                         >
                             <DropdownMenuItem
                                 className="hover:bg-neutral-800 cursor-pointer"
-                                onClick={addTerminal}
+                                onClick={() => addTerminal()} // same function, but could also be customized
                             >
                                 Split Terminal
                             </DropdownMenuItem>
@@ -68,18 +66,20 @@ export function TerminalHeader() {
                     </DropdownMenu>
                 </div>
 
-                {/* Weitere Buttons */}
+                {/* Minimize Button (optional logic) */}
                 <Button
                     variant="ghost"
                     size="icon"
                     className="hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"
                     title="Minimieren"
+                // onClick={() => hideTerminal()} // Add logic if needed
                 >
                     <Minimize2 className="w-4 h-4" />
                 </Button>
 
+                {/* Close Button */}
                 <Button
-                    /* onClick={() => hideTerminal()} */
+                    onClick={hideTerminal}
                     variant="ghost"
                     size="icon"
                     className="hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"

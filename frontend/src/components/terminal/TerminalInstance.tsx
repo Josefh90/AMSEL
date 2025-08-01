@@ -29,7 +29,7 @@ export function TerminalTimer({ startTime }: { startTime: number }) {
 export function TerminalInstance({ sidebarWidth }: { sidebarWidth: number }) {
   //const { isVisible, hideTerminal } = useTerminal();
 
-  const [height, setHeight] = useState(300);
+  const { height, setHeight } = useTerminal();
   const isDragging = useRef(false);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
@@ -41,6 +41,7 @@ export function TerminalInstance({ sidebarWidth }: { sidebarWidth: number }) {
     selectTerminal,
     addTerminal,
     removeTerminal,
+    showAlert, // Use the new showAlert function
   } = useTerminal();;
 
 
@@ -123,6 +124,7 @@ export function TerminalInstance({ sidebarWidth }: { sidebarWidth: number }) {
               onSelect={selectTerminal}
               onAdd={addTerminal}
               onDelete={removeTerminal}
+              showAlert={showAlert} // Pass the showAlert function
             />
           </div>
         </div>

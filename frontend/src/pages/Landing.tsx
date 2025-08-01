@@ -6,7 +6,7 @@ import { PullSecLists } from "../../wailsjs/go/app/App";
 import { Progress } from "../components/ui/progress";
 //import { Events } from "@wailsio/runtime";
 import warnings from "../constants/warnings";
-import { EventsOff, EventsOn } from "../../wailsjs/runtime/runtime";
+import { EventsOff, EventsOn } from "../../wailsjs/runtime/";
 import { useNavigate } from "react-router-dom";
 
 function Landing() {
@@ -17,39 +17,40 @@ function Landing() {
   const [showOutput] = useState(false);
   const navigate = useNavigate();
 
-useEffect(() => {
-  EventsOn("progress", (data: any) => {
-    if (data?.progress !== undefined) {
-      setProgress(data.progress);
-      setStatusMessage(data.message);
-      if (data.progress >= 100) {
-        navigate("/dashboard");
+  useEffect(() => {
+    const handler = (data: any) => {
+      if (data?.progress !== undefined) {
+        setProgress(data.progress);
+        setStatusMessage(data.message);
+        if (data.progress >= 100) {
+          navigate("/dashboard");
+        }
       }
-    }
-  });
+    };
 
-  return () => {
-     // Clean up listener
-      EventsOff("progress");
-  };
-}, []);
+    EventsOn("progress", handler); // ✅ first param is string, second is function
+
+    return () => {
+      EventsOff("progress"); // ✅ same function as above
+    };
+  }, []);
 
 
-function handleClick() {
-  setProgress(0);
-  setStatusMessage("Starting download...");
-  setLoading(true);
+  function handleClick() {
+    setProgress(0);
+    setStatusMessage("Starting download...");
+    setLoading(true);
 
-  PullSecLists(); // kein await mehr!
+    PullSecLists(); // kein await mehr!
 
-  // optional: Reset nach ein paar Sekunden
- /* setTimeout(() => {
-    setLoading(false);
-  }, 10000); */
-}
+    // optional: Reset nach ein paar Sekunden
+    /* setTimeout(() => {
+       setLoading(false);
+     }, 10000); */
+  }
 
   const stopHacking = () => {
- navigate("/dashboard");
+    navigate("/dashboard");
   };
 
   return (
@@ -74,10 +75,10 @@ function handleClick() {
         <div className="flex flex-wrap justify-center gap-4 mb-6">
           <Button
             onClick={handleClick}
-             //className="bg-gray-800 border text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md transition-all duration-200 rounded-none hover:bg-amselblue hover:text-white"
-             className="bg-gray-800 border text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-white transition-all duration-200 rounded-none"
-            //className="-gray-800 border text-white px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-amselblue transition-all duration-200 rounded-none"
-            //className="bg-gray-800 border text-amselblue text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-amselblue hover:text-amselblue transition-all duration-200 rounded-none"
+            //className="bg-gray-800 border text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md transition-all duration-200 rounded-none hover:bg-amselblue hover:text-white"
+            className="bg-gray-800 border text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-white transition-all duration-200 rounded-none"
+          //className="-gray-800 border text-white px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-amselblue transition-all duration-200 rounded-none"
+          //className="bg-gray-800 border text-amselblue text-amselblue px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:text-amselblue hover:text-amselblue transition-all duration-200 rounded-none"
           >
             Start Hacking
           </Button>
@@ -100,21 +101,20 @@ function handleClick() {
         )}
       </div>
 
-     
-        <div className="flex flex-wrap justify-center gap-4 mt-6 mb-6">
-          <Button
-            onClick={stopHacking}
-            className="bg-gray-800 border border-red-500 text-green-400 px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:bg-green-500 hover:text-black transition-all duration-200 rounded-none"
-          >
-            Stop Hacking
-          </Button>
-        </div>
-      
+
+      <div className="flex flex-wrap justify-center gap-4 mt-6 mb-6">
+        <Button
+          onClick={stopHacking}
+          className="bg-gray-800 border border-red-500 text-green-400 px-6 py-3 font-mono tracking-widest uppercase shadow-md hover:bg-green-500 hover:text-black transition-all duration-200 rounded-none"
+        >
+          Stop Hacking
+        </Button>
+      </div>
+
 
       <div
-        className={`w-full px-2 sm:px-8 flex justify-center transition-all duration-300 ${
-          showOutput ? "h-24" : "h-48"
-        }`}
+        className={`w-full px-2 sm:px-8 flex justify-center transition-all duration-300 ${showOutput ? "h-24" : "h-48"
+          }`}
         style={{ overflow: "hidden" }}
       >
         <MatrixTyping

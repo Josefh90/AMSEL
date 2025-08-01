@@ -1,11 +1,31 @@
-// src/components/terminal/TerminalSplit.tsx
-
 import React, { useEffect, useRef, useState } from "react";
 import { SquareTerminal, Trash2, PictureInPicture2 } from "lucide-react";
 import { useTerminal } from "./context/TerminalContext";
 
+import type { TerminalTab } from "./context/TerminalContext";
+import { XTermInstance } from "./XTermInstance";
+
+// 🔁 Holt das aktuelle Terminal und alle seine rekursiven Kinder
+function getTerminalBranch(terminals: TerminalTab[], parentId: number): TerminalTab[] {
+  const branch: TerminalTab[] = [];
+  const queue: number[] = [parentId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    const current = terminals.find((t) => t.id === currentId);
+    if (current) {
+      branch.push(current);
+      const children = terminals.filter((t) => t.parentId === current.id);
+      queue.push(...children.map((c) => c.id));
+    }
+  }
+
+  return branch;
+}
+
 export function TerminalSplit() {
-  const { terminals, removeTerminal } = useTerminal();
+  const { terminals, selectedTerminal, removeTerminal } = useTerminal();
+  const terminalBranch = getTerminalBranch(terminals, selectedTerminal);
 
   const [widths, setWidths] = useState<number[]>([]);
 
@@ -13,21 +33,14 @@ export function TerminalSplit() {
   const startX = useRef(0);
   const startWidths = useRef<number[]>([]);
 
-  // Initialize widths when terminals change
+  // 📏 Initialisiere Breiten nach Anzahl Terminals im Branch
   useEffect(() => {
-    if (terminals.length > 0) {
-      setWidths(Array(terminals.length).fill(100 / terminals.length));
+    if (terminalBranch.length > 0) {
+      setWidths(Array(terminalBranch.length).fill(100 / terminalBranch.length));
     }
-  }, [terminals.length]);
+  }, [terminalBranch.length]);
 
-  function popOutTerminal(idx: number) {
-    const term = terminals[idx];
-
-    if ((term as any).popupWindow && !(term as any).popupWindow.closed) {
-      (term as any).popupWindow.focus();
-      return;
-    }
-
+  function popOutTerminal(term: TerminalTab) {
     const popup = window.open(
       "",
       `TerminalPopup_${term.id}`,
@@ -44,7 +57,7 @@ export function TerminalSplit() {
       popup.document.body.innerText = `[${term.name} terminal content here]`;
 
       popup.addEventListener("beforeunload", () => {
-        // You could add logic here to update state if you store popupWindow
+        // hier kannst du spätere Logik einbauen
       });
     }
   }
@@ -99,11 +112,11 @@ export function TerminalSplit() {
         className="flex flex-row flex-grow relative overflow-hidden"
         style={{ height: "calc(100% - 40px)" }}
       >
-        {terminals.map((term, i) => (
+        {terminalBranch.map((term, i) => (
           <React.Fragment key={term.id}>
             <div
               className="relative flex flex-col bg-[#252526] border-r border-neutral-700 overflow-auto"
-              style={{ width: `${widths[i]}%`, minWidth: "10%" }}
+              style={{ width: `${widths[i] ?? 100 / terminalBranch.length}%`, minWidth: "10%" }}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-2 py-1 border-b border-neutral-800">
@@ -113,7 +126,7 @@ export function TerminalSplit() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
-                    onClick={() => removeTerminal(i)}
+                    onClick={() => removeTerminal(terminals.findIndex((t) => t.id === term.id))}
                     title="Delete Terminal"
                     className="p-1 hover:text-red-500"
                     aria-label={`Delete ${term.name}`}
@@ -122,7 +135,7 @@ export function TerminalSplit() {
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => popOutTerminal(i)}
+                    onClick={() => popOutTerminal(term)}
                     title="Pop Out Terminal"
                     className="p-1 hover:text-green-400"
                     aria-label={`Pop Out ${term.name}`}
@@ -133,8 +146,8 @@ export function TerminalSplit() {
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="flex-grow p-2 text-sm overflow-auto text-neutral-300">
+              {/* Inhalt */}
+              {/* <div className="flex-grow p-2 text-sm overflow-auto text-neutral-300">
                 <div
                   style={{
                     background: "#1e1e1e",
@@ -148,11 +161,16 @@ export function TerminalSplit() {
                 >
                   {`[${term.name} terminal content here]`}
                 </div>
+              </div>*/}
+              <div className="flex-grow p-2 text-sm overflow-auto text-neutral-300">
+                <XTermInstance terminalId={term.id} />
               </div>
             </div>
 
-            {/* Resizable splitter bar */}
-            {i < terminals.length - 1 && (
+
+
+            {/* Splitter zwischen Terminals */}
+            {i < terminalBranch.length - 1 && (
               <div
                 onMouseDown={(e) => onMouseDownSplitter(e, i)}
                 className="w-1 cursor-col-resize bg-neutral-700 hover:bg-amselblue transition-colors"

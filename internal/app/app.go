@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sync"
+	"time"
 
 	hydra "my-project/internal/services"
 	//utils_git "my-project/internal/utils"
@@ -22,19 +24,34 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+type TerminalSession struct {
+	Cmd    *exec.Cmd
+	Stdin  io.WriteCloser
+	Stdout io.ReadCloser
+	Stderr io.ReadCloser
+}
+
 type App struct {
 	HydraService *hydra.Hydra
 	ctx          context.Context
 
-	cmd   *exec.Cmd
-	stdin io.WriteCloser // ⬅️ HIER hinzufügen!
+	cmd       *exec.Cmd
+	stdin     io.WriteCloser
+	sessions  map[int]*TerminalSession
+	sessionsM sync.Mutex
 }
 
 func MyApp() *App {
 	return &App{
 		HydraService: hydra.NewHydra(),
+		sessions:     make(map[int]*TerminalSession),
 	}
 }
+
+const (
+	containerName = "hydra-container"
+	imageName     = "my-kali-image"
+)
 
 func (a *App) Startup(ctx context.Context) {
 	a.HydraService.Ctx = ctx
@@ -101,93 +118,261 @@ func getProjectRoot() (string, error) {
 	return filepath.Abs(filepath.Join(filepath.Dir(exePath), "..", ".."))
 }
 
-func (a *App) StartTerminal(containerName string) error {
-	//dockerRun := fmt.Sprintf("docker run --rm --name %s -i kali", containerName)
-	imageName := "my-kali-image"
-	projectRoot, err := getProjectRoot()
-
-	// ✅ Baue das Docker-Image, falls es nicht da ist
-	buildCmd := exec.Command("docker", "build", "-t", imageName, ".")
-	buildCmd.Dir = projectRoot // Ordner, wo dein Dockerfile liegt
-	buildOut, err := buildCmd.CombinedOutput()
+func containerExists(name string) bool {
+	check := exec.Command("docker", "ps", "-a", "--filter", fmt.Sprintf("name=^/%s$", name), "--format", "{{.Names}}")
+	out, err := check.Output()
 	if err != nil {
-		log.Println("Build output:", string(buildOut))
-		runtime.EventsEmit(a.ctx, "terminal:data", string(buildOut))
-		return fmt.Errorf("fehler beim Bauen des Images: %s\n%s", err, string(buildOut))
+		return false
+	}
+	return strings.TrimSpace(string(out)) == name
+}
+
+func removeContainer(name string) error {
+	log.Printf("[Terminal] Container '%s' existiert bereits – wird entfernt", name)
+	removeCmd := exec.Command("docker", "rm", "-f", name)
+	out, err := removeCmd.CombinedOutput()
+	if err != nil && strings.Contains(string(out), "removal of container") {
+		log.Println("[Terminal] Container wird bereits entfernt – warte...")
+		time.Sleep(2 * time.Second)
+		out, err = removeCmd.CombinedOutput()
+	}
+	if err != nil {
+		log.Println("❌ Fehler beim Entfernen:", err)
+		log.Println("🧾 Output:", string(out))
+		return err
+	}
+	return nil
+}
+
+// EnsureContainerRunning checks if container is running, starts if needed
+func (a *App) EnsureContainerRunning(containerName string) error {
+	if err := a.buildImageIfNeeded(); err != nil {
+		return err
 	}
 
-	//a.cmd = exec.Command("docker", "run", "--rm", "--name", containerName, "-i", "my-kali-image")
-	a.cmd = exec.Command("docker", "run", "--rm", "--name", containerName, "-i", "my-kali-image", "bash", "-i")
-	a.cmd.Env = append(os.Environ(),
-		"COLUMNS=120",
-		"LINES=40",
-	)
+	// 1. Check if container is running
+	check := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", containerName)
+	out, err := check.Output()
+	if err == nil && strings.TrimSpace(string(out)) == "true" {
+		log.Println("✅ Container is already running:", containerName)
+		return nil
+	}
 
-	stdout, err := a.cmd.StdoutPipe()
+	// 2. Remove stale container if exists
+	existsCmd := exec.Command("docker", "ps", "-a", "--filter", fmt.Sprintf("name=^/%s$", containerName), "--format", "{{.ID}}")
+	existsOut, err := existsCmd.Output()
+	existing := strings.TrimSpace(string(existsOut))
+
+	if existing != "" {
+		log.Printf("⚠️ Container '%s' exists but not running — removing...\n", containerName)
+		rm := exec.Command("docker", "rm", "-f", containerName)
+		if rmOut, err := rm.CombinedOutput(); err != nil {
+			log.Println("❌ Could not remove container:", err)
+			log.Println("Output:", string(rmOut))
+			return fmt.Errorf("could not remove existing container: %w", err)
+		}
+		log.Println("🧹 Removed stale container.")
+	}
+
+	// 3. Start container
+	log.Println("🚀 Starting container:", containerName)
+	startCmd := exec.Command("docker", "run", "--pull=never", "-d", "--name", containerName, imageName, "sleep", "infinity")
+	startOut, err := startCmd.CombinedOutput()
+	log.Printf("📤 Run output: %s", string(startOut)) // optional, helps debugging
+
+	if err != nil {
+		if strings.Contains(string(startOut), "Unable to find image") {
+			log.Println("❌ Image not found locally. Did buildImageIfNeeded() succeed?")
+		}
+		log.Printf("❌ Failed to start container: %v\nOutput: %s\n", err, startOut)
+		return fmt.Errorf("failed to start container: %w", err)
+	}
+
+	log.Println("✅ Container started:", containerName)
+	return nil
+}
+
+// StartTerminalSession launches a new `docker exec` shell
+func (a *App) StartTerminalSession(terminalId int) error {
+	containerName := fmt.Sprintf("hydra-container-%d", terminalId)
+	if err := a.EnsureContainerRunning(containerName); err != nil {
+		return err
+	}
+
+	cmd := exec.Command("docker", "exec", "-i", containerName, "bash", "-i")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	session := &TerminalSession{
+		Cmd:    cmd,
+		Stdin:  stdin,
+		Stdout: stdout,
+		Stderr: stderr,
+	}
+
+	a.sessionsM.Lock()
+	a.sessions[terminalId] = session
+	a.sessionsM.Unlock()
+
+	go a.streamOutput(terminalId, stdout)
+	go a.streamOutput(terminalId, stderr)
+	return nil
+}
+
+// CloseTerminal kills the exec session
+func (a *App) CloseTerminal(terminalId int) {
+	a.sessionsM.Lock()
+	session, ok := a.sessions[terminalId]
+	if ok {
+		delete(a.sessions, terminalId)
+	}
+	a.sessionsM.Unlock()
+
+	if ok && session.Cmd != nil {
+		_ = session.Cmd.Process.Kill()
+		log.Printf("🛑 Terminal session %d closed\n", terminalId)
+	}
+}
+
+// Build image if not found
+func (a *App) buildImageIfNeeded() error {
+	check := exec.Command("docker", "images", "-q", imageName)
+	out, err := check.Output()
+	if err != nil || strings.TrimSpace(string(out)) == "" {
+		log.Println("📦 Image not found locally. Building image:", imageName)
+
+		projectRoot, err := getProjectRoot() // make sure this function is correct
+		if err != nil {
+			return fmt.Errorf("could not find project root: %w", err)
+		}
+
+		build := exec.Command("docker", "build", "-t", imageName, ".")
+		build.Dir = projectRoot
+		buildOut, err := build.CombinedOutput()
+		if err != nil {
+			log.Printf("❌ Failed to build image:\n%s", string(buildOut))
+			return fmt.Errorf("docker build failed: %w", err)
+		}
+
+		log.Println("✅ Docker image built successfully.")
+	}
+	return nil
+}
+
+func (a *App) StartTerminal(containerName string) error {
+	imageName := "my-kali-image"
+	projectRoot, err := getProjectRoot()
+	if err != nil {
+		return err
+	}
+
+	if containerExists(containerName) {
+		if err := removeContainer(containerName); err != nil {
+			return fmt.Errorf("container existiert und konnte nicht entfernt werden: %w", err)
+		}
+	}
+
+	// Image bauen (optional – falls noch nicht vorhanden)
+	buildCmd := exec.Command("docker", "build", "-t", imageName, ".")
+	buildCmd.Dir = projectRoot
+	buildOut, err := buildCmd.CombinedOutput()
+	if err != nil {
+		log.Println("📦 Build output:", string(buildOut))
+		runtime.EventsEmit(a.ctx, "terminal:data", string(buildOut))
+		return fmt.Errorf("fehler beim Bauen: %w", err)
+	}
+
+	// Container starten
+	a.cmd = exec.Command("docker", "run", "--rm", "--name", containerName, "-i", imageName, "bash", "-i")
+	a.cmd.Env = append(os.Environ(), "COLUMNS=120", "LINES=40")
+
+	//stdout, err := a.cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("stdout pipe error: %w", err)
 	}
-
-	stderr, err := a.cmd.StderrPipe()
+	//stderr, err := a.cmd.StderrPipe()
 	if err != nil {
 		return fmt.Errorf("stderr pipe error: %w", err)
 	}
-
 	stdin, err := a.cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("stdin pipe error: %w", err)
 	}
 	a.stdin = stdin
 
-	// Starte Container
 	if err := a.cmd.Start(); err != nil {
 		return fmt.Errorf("cmd start error: %w", err)
 	}
 
-	// Kombiniere stdout + stderr
-	go a.streamOutput(stdout)
-	go a.streamOutput(stderr)
+	// Stream Output
+	//go a.streamOutput(1, stdout)
+	//go a.streamOutput(1, stderr)
 
 	return nil
 }
 
-func (a *App) streamOutput(reader io.ReadCloser) {
-	log.Println("📡 Starting streamOutput...") // <---
+func (a *App) streamOutput(terminalId int, pipe io.ReadCloser) {
+	log.Printf("📡 Streaming output for terminal ID %d", terminalId)
 
 	buf := make([]byte, 1024)
 	for {
-		n, err := reader.Read(buf)
+		n, err := pipe.Read(buf)
 		if err != nil {
-			log.Println("❌ Read error:", err)
+			if err != io.EOF {
+				log.Printf("❌ Terminal %d read error: %v", terminalId, err)
+			}
 			break
 		}
-		//data := string(buf[:n])
-		data := string(buf[:n]) // raw output including ANSI codes
-		log.Println(">", data)
-		runtime.EventsEmit(a.ctx, "terminal:data", data)
-
-		//runtime.EventsEmit(a.ctx, "terminal:data", buf[:n])
+		output := string(buf[:n])
+		log.Printf("📤 Terminal %d output: %s", terminalId, output) // ✅ <-- add this
+		runtime.EventsEmit(a.ctx, "terminal:data", map[string]interface{}{
+			"id":     terminalId,
+			"output": output,
+		})
 	}
 }
 
 // Empfängt Eingaben vom Frontend
-func (a *App) SendInput(input string) {
-	if a.stdin != nil {
-		// ls automatisch erweitern
-		if input == "ls" {
-			input = "ls --color=always -C"
-		}
-		_, err := io.WriteString(a.stdin, input+"\n")
-		if err != nil {
-			log.Println("Fehler beim Schreiben an stdin:", err)
-		}
+func (a *App) SendInput(terminalId int, input string) {
+	log.Printf("📥 Sending input to terminal %d: %s", terminalId, input)
+
+	a.sessionsM.Lock()
+	session, ok := a.sessions[terminalId]
+	a.sessionsM.Unlock()
+
+	if !ok || session.Stdin == nil {
+		log.Printf("❌ Kein gültiger Input-Stream für Terminal %d", terminalId)
+		return
+	}
+
+	// Optional: automatisches ls-format
+	if strings.HasPrefix(input, "ls") && !strings.Contains(input, "--color") {
+		input = strings.Replace(input, "ls", "ls --color=always -C", 1)
+	}
+
+	_, err := io.WriteString(session.Stdin, input+"\n")
+	if err != nil {
+		log.Println("❌ Fehler beim Schreiben an stdin:", err)
 	}
 }
 
-func (a *App) GetCompletion(fullInput string) string {
-	containerName := "hydra-container"
+func (a *App) GetCompletion(terminalId int, fullInput string) string {
+	containerName := fmt.Sprintf("hydra-container-%d", terminalId)
 
-	// Extrahiere das letzte Argument (z. B. "cd v" → "v")
 	parts := strings.Fields(fullInput)
 	if len(parts) == 0 {
 		return ""
@@ -204,14 +389,12 @@ func (a *App) GetCompletion(fullInput string) string {
 		return ""
 	}
 
-	// Treffer auswerten
 	lines := strings.Split(string(out), "\n")
 	if len(lines) == 0 || lines[0] == "" {
 		return fullInput
 	}
 	suggestion := lines[0]
 
-	// Rekonstruiere ursprünglichen Befehl mit Autocomplete
 	parts[len(parts)-1] = suggestion
 	return strings.Join(parts, " ")
 }

@@ -6,6 +6,7 @@ export type TerminalTab = {
     id: number;
     name: string;
     startTime: number,
+    parentId: number | null;
     // hier kannst du bei Bedarf weitere Props hinzufügen
 };
 
@@ -23,6 +24,7 @@ type TerminalContextType = {
     setIsVisible: (visible: boolean) => void;
     hideTerminal: () => void;
     showTerminal: () => void;
+    showAlert: (message: string) => void; // Optional: Alert-Funktion
     // splitTerminal: (index: number) => void; // Funktion zum Aufteilen eines Terminals
 };
 
@@ -39,7 +41,14 @@ export function useTerminal() {
 }
 
 export function TerminalProvider({ children }: { children: ReactNode }) {
-    const [terminals, setTerminals] = useState<TerminalTab[]>([{ id: 1, name: "Terminal 1", startTime: Date.now() }]);
+    const [terminals, setTerminals] = useState<TerminalTab[]>([
+        {
+            id: 1,
+            name: "Terminal 1",
+            startTime: Date.now(),
+            parentId: null,
+        },
+    ]);
     const [selectedTerminal, setSelectedTerminal] = useState(0);
     const [height, setHeight] = useState(300);
     const [isVisible, setIsVisible] = useState(true);
@@ -47,36 +56,47 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     const hideTerminal = () => setIsVisible(false);
     const showTerminal = () => setIsVisible(true);
 
-    const addTerminal = (index?: number) => {
+    const showAlert = (message: string) => {
+        window.alert(message);
+    };
+
+    const addTerminal = (parentIndex?: number) => {
         setTerminals((prev) => {
-            const nextId = prev.length ? prev[prev.length - 1].id + 1 : 1;
+
+            const nextId = prev.length ? Math.max(...prev.map(t => t.id)) + 1 : 1;
+
+            const parentTerminal = parentIndex !== undefined ? prev[parentIndex] : undefined;
             const newTerminal: TerminalTab = {
                 id: nextId,
                 name: `Terminal ${nextId}`,
                 startTime: Date.now(),
+                parentId: parentTerminal?.id ?? null,
             };
-
-            if (index !== undefined) {
-                const updated = [...prev];
-                updated.splice(index + 1, 0, newTerminal);
-                return updated;
-            }
 
             return [...prev, newTerminal];
         });
 
-        setSelectedTerminal(index !== undefined ? index + 1 : terminals.length);
+        setSelectedTerminal(terminals.length); // You may adjust selection logic
     };
 
 
     const removeTerminal = (index: number) => {
         setTerminals((prev) => {
-            if (prev.length === 1) return prev;
-            const newList = prev.filter((_, i) => i !== index);
-            return newList;
+            const toRemove = prev[index];
+            const parentId = toRemove.parentId;
+
+            const updated = prev
+                .filter((_, i) => i !== index)
+                .map((t) =>
+                    t.parentId === toRemove.id
+                        ? { ...t, parentId } // reparent children
+                        : t
+                );
+
+            return updated;
         });
 
-        setSelectedTerminal((prevSelected) => (prevSelected === index ? 0 : prevSelected));
+        setSelectedTerminal(0);
     };
 
     const selectTerminal = (index: number) => {
@@ -96,7 +116,9 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
                 setHeight,
                 setIsVisible,
                 hideTerminal,
-                showTerminal
+                showTerminal,
+                showAlert
+
 
             }}
         >
