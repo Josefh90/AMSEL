@@ -3,90 +3,106 @@ import {
     DropdownMenuTrigger,
     DropdownMenuContent,
     DropdownMenuItem,
-} from "../ui/dropdown-menu";
+} from "../../components/ui/dropdown-menu";
+import { Button } from "../../components/ui/button";
+import {
+    Tooltip,
+    TooltipTrigger,
+    TooltipContent,
+    TooltipProvider,
+} from "../../components/ui/tooltip";
 
 import { ChevronDown, Minimize2, X, Plus } from "lucide-react";
-import { Button } from "../ui/button";
-import { useTerminal } from "./context/TerminalContext"; // ✅ Use context
+import { useTerminal } from "./context/TerminalContext";
 
 export function TerminalHeader() {
-    const {
-        addTerminal,
-        hideTerminal, // ✅ Optional: implement hide on "X" or minimize if needed
-    } = useTerminal();
+    const { addTerminal, hideTerminal } = useTerminal();
 
     return (
-        <div className="flex items-center justify-between text-sm bg-[#2d2d2d] text-white px-3 py-[2px] border-b border-neutral-700 h-8">
-            {/* Terminal Label */}
-            <div className="px-2 py-[1px] rounded-t bg-[#1e1e1e] font-semibold text-xs leading-tight">
+        <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted text-sm h-7">
+            {/* Label */}
+            <div className="px-2 py-[2px] rounded bg-background font-semibold text-xs tracking-tight leading-none text-muted-foreground">
                 Shellbird
             </div>
 
-            {/* Button Group */}
-            <div className="flex items-center space-x-1">
-                <div className="flex">
-                    {/* Add Terminal Button */}
-                    <Button
-                        onClick={() => addTerminal()} // ✅ opens new tab at end
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-r-none hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"
-                        title="Neues Terminal öffnen"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </Button>
-
-                    {/* Dropdown Menu */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+            {/* Actions */}
+            <div className="flex items-center gap-1">
+                <TooltipProvider>
+                    {/* Add Button */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
                             <Button
+                                onClick={() => addTerminal()}
                                 variant="ghost"
                                 size="icon"
-                                className="rounded-l-none -ml-px hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"
-                                title="Mehr Optionen"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary border border-border"
                             >
-                                <ChevronDown className="w-4 h-4" />
+                                <Plus className="w-4 h-4" />
                             </Button>
-                        </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Neues Terminal</TooltipContent>
+                    </Tooltip>
+
+                    {/* Dropdown */}
+                    <DropdownMenu>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-primary border border-border"
+                                    >
+                                        <ChevronDown className="w-4 h-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>Mehr Optionen</TooltipContent>
+                        </Tooltip>
+
                         <DropdownMenuContent
                             side="bottom"
                             align="end"
-                            className="z-50 bg-[#1e1e1e] text-white border border-neutral-700 rounded shadow-md"
+                            className="z-50 w-40"
                         >
-                            <DropdownMenuItem
-                                className="hover:bg-neutral-800 cursor-pointer"
-                                onClick={() => addTerminal()} // same function, but could also be customized
-                            >
+                            <DropdownMenuItem onClick={() => addTerminal()}>
                                 Split Terminal
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-neutral-800 cursor-pointer">
+                            <DropdownMenuItem disabled>
                                 Rename (coming soon)
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                </div>
 
-                {/* Minimize Button (optional logic) */}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"
-                    title="Minimieren"
-                // onClick={() => hideTerminal()} // Add logic if needed
-                >
-                    <Minimize2 className="w-4 h-4" />
-                </Button>
+                    {/* Minimize Button (placeholder logic) */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-primary border border-border"
+                            >
+                                <Minimize2 className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Minimieren</TooltipContent>
+                    </Tooltip>
 
-                {/* Close Button */}
-                <Button
-                    onClick={hideTerminal}
-                    variant="ghost"
-                    size="icon"
-                    className="hover:text-amselblue transition-colors border border-neutral-700 h-6 w-6"
-                    title="Terminal schließen"
-                >
-                    <X className="w-4 h-4" />
-                </Button>
+                    {/* Close Button */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={hideTerminal}
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive border border-border"
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Schließen</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             </div>
         </div>
     );

@@ -5,27 +5,13 @@ import { useTerminal } from "./context/TerminalContext";
 import type { TerminalTab } from "./context/TerminalContext";
 import { XTermInstance } from "./XTermInstance";
 
-// 🔁 Holt das aktuelle Terminal und alle seine rekursiven Kinder
-function getTerminalBranch(terminals: TerminalTab[], parentId: number): TerminalTab[] {
-  const branch: TerminalTab[] = [];
-  const queue: number[] = [parentId];
-
-  while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    const current = terminals.find((t) => t.id === currentId);
-    if (current) {
-      branch.push(current);
-      const children = terminals.filter((t) => t.parentId === current.id);
-      queue.push(...children.map((c) => c.id));
-    }
-  }
-
-  return branch;
-}
-
 export function TerminalSplit() {
   const { terminals, selectedTerminal, removeTerminal } = useTerminal();
-  const terminalBranch = getTerminalBranch(terminals, selectedTerminal);
+  const selected = terminals.find(t => t.id === selectedTerminal);
+  const groupId = selected?.groupId;
+
+  // Alle Terminals derselben Gruppe anzeigen
+  const groupTerminals = terminals.filter(t => t.groupId === groupId);
 
   const [widths, setWidths] = useState<number[]>([]);
 
@@ -33,12 +19,11 @@ export function TerminalSplit() {
   const startX = useRef(0);
   const startWidths = useRef<number[]>([]);
 
-  // 📏 Initialisiere Breiten nach Anzahl Terminals im Branch
   useEffect(() => {
-    if (terminalBranch.length > 0) {
-      setWidths(Array(terminalBranch.length).fill(100 / terminalBranch.length));
+    if (groupTerminals.length > 0) {
+      setWidths(Array(groupTerminals.length).fill(100 / groupTerminals.length));
     }
-  }, [terminalBranch.length]);
+  }, [groupTerminals.length]);
 
   function popOutTerminal(term: TerminalTab) {
     const popup = window.open(
@@ -112,11 +97,14 @@ export function TerminalSplit() {
         className="flex flex-row flex-grow relative overflow-hidden"
         style={{ height: "calc(100% - 40px)" }}
       >
-        {terminalBranch.map((term, i) => (
+        {groupTerminals.map((term, i) => (
           <React.Fragment key={term.id}>
             <div
-              className="relative flex flex-col bg-[#252526] border-r border-neutral-700 overflow-auto"
-              style={{ width: `${widths[i] ?? 100 / terminalBranch.length}%`, minWidth: "10%" }}
+              className="relative flex flex-col bg-[#252526] border-r border-neutral-700 overflow-hidden"
+              style={{
+                width: `${widths[i] ?? 100 / groupTerminals.length}%`,
+                minWidth: "10%",
+              }}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-2 py-1 border-b border-neutral-800">
@@ -146,31 +134,14 @@ export function TerminalSplit() {
                 </div>
               </div>
 
-              {/* Inhalt */}
-              {/* <div className="flex-grow p-2 text-sm overflow-auto text-neutral-300">
-                <div
-                  style={{
-                    background: "#1e1e1e",
-                    height: "100%",
-                    borderRadius: 4,
-                    padding: 8,
-                    fontFamily: "monospace",
-                    whiteSpace: "pre-wrap",
-                    overflowY: "auto",
-                  }}
-                >
-                  {`[${term.name} terminal content here]`}
-                </div>
-              </div>*/}
-              <div className="flex-grow p-2 text-sm overflow-auto text-neutral-300">
+              {/* Terminal-Inhalt */}
+              <div className="flex-grow min-h-0">
                 <XTermInstance terminalId={term.id} />
               </div>
             </div>
 
-
-
-            {/* Splitter zwischen Terminals */}
-            {i < terminalBranch.length - 1 && (
+            {/* Splitter */}
+            {i < groupTerminals.length - 1 && (
               <div
                 onMouseDown={(e) => onMouseDownSplitter(e, i)}
                 className="w-1 cursor-col-resize bg-neutral-700 hover:bg-amselblue transition-colors"

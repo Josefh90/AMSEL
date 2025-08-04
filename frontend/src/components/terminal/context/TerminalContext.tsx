@@ -2,12 +2,13 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 
+// Terminal-Typ: basiert jetzt auf groupId statt parentId
 export type TerminalTab = {
     id: number;
     name: string;
-    startTime: number,
-    parentId: number | null;
-    // hier kannst du bei Bedarf weitere Props hinzufügen
+    startTime: number;
+    groupId: number;
+    isActive: boolean;
 };
 
 type TerminalContextType = {
@@ -17,20 +18,17 @@ type TerminalContextType = {
     isVisible: boolean;
 
     // Aktionen / Setter
-    addTerminal: () => void;
+    addTerminal: (groupId?: number) => void;
     removeTerminal: (index: number) => void;
-    selectTerminal: (index: number) => void;
+    selectTerminal: (id: number) => void;
     setHeight: (height: number) => void;
     setIsVisible: (visible: boolean) => void;
     hideTerminal: () => void;
     showTerminal: () => void;
-    showAlert: (message: string) => void; // Optional: Alert-Funktion
-    // splitTerminal: (index: number) => void; // Funktion zum Aufteilen eines Terminals
+    showAlert: (message: string) => void;
 };
 
 const TerminalContext = createContext<TerminalContextType | undefined>(undefined);
-
-
 
 export function useTerminal() {
     const context = useContext(TerminalContext);
@@ -46,10 +44,11 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
             id: 1,
             name: "Terminal 1",
             startTime: Date.now(),
-            parentId: null,
+            groupId: 1,
+            isActive: true,
         },
     ]);
-    const [selectedTerminal, setSelectedTerminal] = useState(0);
+    const [selectedTerminal, setSelectedTerminal] = useState(1); // ID statt Index
     const [height, setHeight] = useState(300);
     const [isVisible, setIsVisible] = useState(true);
 
@@ -60,47 +59,44 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
         window.alert(message);
     };
 
-    const addTerminal = (parentIndex?: number) => {
+    const addTerminal = (baseGroupId?: number) => {
         setTerminals((prev) => {
+            const nextId = prev.length ? Math.max(...prev.map((t) => t.id)) + 1 : 1;
+            const newGroupId =
+                baseGroupId ?? (prev.length ? Math.max(...prev.map((t) => t.groupId)) + 1 : 1);
 
-            const nextId = prev.length ? Math.max(...prev.map(t => t.id)) + 1 : 1;
-
-            const parentTerminal = parentIndex !== undefined ? prev[parentIndex] : undefined;
             const newTerminal: TerminalTab = {
                 id: nextId,
                 name: `Terminal ${nextId}`,
                 startTime: Date.now(),
-                parentId: parentTerminal?.id ?? null,
+                groupId: newGroupId,
+                isActive: true,
             };
 
             return [...prev, newTerminal];
         });
 
-        setSelectedTerminal(terminals.length); // You may adjust selection logic
+        // Direkt als aktiv markieren
+        setSelectedTerminal(() => {
+            const next = terminals.length ? Math.max(...terminals.map((t) => t.id)) + 1 : 1;
+            return next;
+        });
     };
-
 
     const removeTerminal = (index: number) => {
         setTerminals((prev) => {
-            const toRemove = prev[index];
-            const parentId = toRemove.parentId;
-
-            const updated = prev
-                .filter((_, i) => i !== index)
-                .map((t) =>
-                    t.parentId === toRemove.id
-                        ? { ...t, parentId } // reparent children
-                        : t
-                );
-
+            const updated = prev.filter((_, i) => i !== index);
             return updated;
         });
 
-        setSelectedTerminal(0);
+        setSelectedTerminal(() => {
+            const remaining = terminals.filter((_, i) => i !== index);
+            return remaining.length > 0 ? remaining[0].id : 0;
+        });
     };
 
-    const selectTerminal = (index: number) => {
-        setSelectedTerminal(index);
+    const selectTerminal = (id: number) => {
+        setSelectedTerminal(id);
     };
 
     return (
@@ -117,9 +113,7 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
                 setIsVisible,
                 hideTerminal,
                 showTerminal,
-                showAlert
-
-
+                showAlert,
             }}
         >
             {children}
